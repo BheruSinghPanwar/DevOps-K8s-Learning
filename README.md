@@ -1,6 +1,5 @@
 Sure, here's a README for your repository with some decorative elements to make it visually appealing:
 
-```markdown
 # 🌟 DevOps Learning Repository 🌟
 
 Welcome to the **DevOps Learning Repository**! This repository is dedicated to the exploration and mastery of various DevOps tools and practices, including Docker, Kubernetes, and more.
