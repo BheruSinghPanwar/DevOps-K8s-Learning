@@ -1,0 +1,43 @@
+GitLab Runner
+Open source application that is used to
+run jobs in a GitLab CI/CD pipeline
+Very similar to the concept of a Jenkins
+agent
+Pipeline jobs are assigned to available GitLab Runners
+The program can be installed on your local machine, a VM, a Docker container and cloud infrastructure
+Supported on Linux, Windows, macOS, FreeBSD
+GitLab Runners execute the work defined in GitLab pipeline jobs
+
+GitLab Runner Types
+• Shared
+Available to all projects in a GitLab instance
+Group
+Available to all projects in a group
+Project
+For a single project or a set of projects with specific requirements
+
+GitLab Runner Executor
+• The GitLab Runner executor determines the environment in which a job will run
+In a VM via a hypervisor such as VirtualBox
+Shell
+Remote SSH
+Docker
+Kubernetes
+Custom executor
+
+GitLab Runner Monitoring
+The Runner program has an embedded Prometheus metrics HTTP server for monitoring
+Runner business logic metrics
+Go-specific process metrics
+General process metrics
+Build version information
+
+Tags
+Tags can be added to a GitLab runner
+Reference tags from within a GitLab pipeline to specify which runners should be used for a job
+
+Steps for self-hosting
+Install runner program on target host
+• Choose an executor
+Register GitLab runner
+Run a pipeline that utilizes your runner
