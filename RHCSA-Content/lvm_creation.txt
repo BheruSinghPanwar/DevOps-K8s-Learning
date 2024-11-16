@@ -1,0 +1,222 @@
+t@arya ~]# lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   20G  0 disk 
+├─sda1   8:1    0    1G  0 part /boot
+└─sda2   8:2    0   19G  0 part 
+  ├─cl-root
+  │    253:0    0   17G  0 lvm  /
+  └─cl-swap
+       253:1    0    2G  0 lvm  [SWAP]
+sdb      8:16   0   20G  0 disk 
+└─sdb1   8:17   0  500M  0 part [SWAP]
+sdc      8:32   0   20G  0 disk 
+sr0     11:0    1  8.6G  0 rom  /run/media/r
+[root@arya ~]# 
+[root@arya ~]# lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   20G  0 disk 
+├─sda1   8:1    0    1G  0 part /boot
+└─sda2   8:2    0   19G  0 part 
+  ├─cl-root
+  │    253:0    0   17G  0 lvm  /
+  └─cl-swap
+       253:1    0    2G  0 lvm  [SWAP]
+sdb      8:16   0   20G  0 disk 
+└─sdb1   8:17   0  500M  0 part [SWAP]
+sdc      8:32   0   20G  0 disk 
+sr0     11:0    1  8.6G  0 rom  /run/media/r
+[root@arya ~]# 
+[root@arya ~]# fdisk /dev/sdb
+
+Welcome to fdisk (util-linux 2.32.1).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+
+Command (m for help): n
+Partition type
+   p   primary (1 primary, 0 extended, 3 free)
+   e   extended (container for logical partitions)
+Select (default p): p
+Partition number (2-4, default 2): 2
+First sector (1026048-41943039, default 1026048): 
+Last sector, +sectors or +size{K,M,G,T,P} (1026048-41943039, default 41943039): +10G
+
+Created a new partition 2 of type 'Linux' and of size 10 GiB.
+
+Command (m for help): t
+Partition number (1,2, default 2): 2
+Hex code (type L to list all codes): 8e
+
+Changed type of partition 'Linux' to 'Linux LVM'.
+
+Command (m for help): w
+The partition table has been altered.
+Syncing disks.
+
+[root@arya ~]# lsblk
+NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda      8:0    0   20G  0 disk 
+├─sda1   8:1    0    1G  0 part /boot
+└─sda2   8:2    0   19G  0 part 
+  ├─cl-root
+  │    253:0    0   17G  0 lvm  /
+  └─cl-swap
+       253:1    0    2G  0 lvm  [SWAP]
+sdb      8:16   0   20G  0 disk 
+├─sdb1   8:17   0  500M  0 part [SWAP]
+└─sdb2   8:18   0   10G  0 part 
+sdc      8:32   0   20G  0 disk 
+sr0     11:0    1  8.6G  0 rom  /run/media/r
+
+[root@arya ~]# pvcreate /dev/sdb2
+  Physical volume "/dev/sdb2" successfully created.
+[root@arya ~]# vgcreate -s 8M rhcsa /dev/sdb2
+  Volume group "rhcsa" successfully created
+[root@arya ~]# vgdisplay 
+  --- Volume group ---
+  VG Name               rhcsa
+  System ID             
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  1
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                0
+  Open LV               0
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               9.99 GiB
+  PE Size               8.00 MiB
+  Total PE              1279
+  Alloc PE / Size       0 / 0   
+  Free  PE / Size       1279 / 9.99 GiB
+  VG UUID               x5e8eR-A9qF-8OlA-4Lii-155j-Rdjj-z3oHZ6
+   
+  --- Volume group ---
+  VG Name               cl
+  System ID             
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  3
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                2
+  Open LV               2
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               <19.00 GiB
+  PE Size               4.00 MiB
+  Total PE              4863
+  Alloc PE / Size       4863 / <19.00 GiB
+  Free  PE / Size       0 / 0   
+  VG UUID               Z5ooCs-6eZr-5dgZ-pq1z-0gkl-EK5e-uPnLq1
+   
+[root@arya ~]# 
+[root@arya ~]# lvcreate -L +5G -n arya rhcsa 
+  Logical volume "arya" created.
+[root@arya ~]# lvdisplay 
+  --- Logical volume ---
+  LV Path                /dev/rhcsa/arya
+  LV Name                arya
+  VG Name                rhcsa
+  LV UUID                jTeKQh-jVbS-1K9h-ekeq-tyYG-AYys-U3DkQs
+  LV Write Access        read/write
+  LV Creation host, time arya, 2023-12-11 00:07:22 -0500
+  LV Status              available
+  # open                 0
+  LV Size                5.00 GiB
+  Current LE             640
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:2
+   
+  --- Logical volume ---
+  LV Path                /dev/cl/swap
+  LV Name                swap
+  VG Name                cl
+  LV UUID                NpE7Tm-QCSX-dQ6u-uC1S-VB9Q-jVeK-AElyI6
+  LV Write Access        read/write
+  LV Creation host, time localhost, 2023-10-25 21:04:22 -0400
+  LV Status              available
+  # open                 2
+  LV Size                2.00 GiB
+  Current LE             512
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:1
+   
+  --- Logical volume ---
+  LV Path                /dev/cl/root
+  LV Name                root
+  VG Name                cl
+  LV UUID                pitP8L-HGz6-qWRR-9gxH-Jq0F-yle0-28SNqB
+  LV Write Access        read/write
+  LV Creation host, time localhost, 2023-10-25 21:04:22 -0400
+  LV Status              available
+  # open                 1
+  LV Size                <17.00 GiB
+  Current LE             4351
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:0
+   
+[root@arya ~]# 
+[root@arya ~]# mkfs.xfs /dev/rhcsa/arya
+meta-data=/dev/rhcsa/arya        isize=512    agcount=4, agsize=327680 blks
+         =                       sectsz=512   attr=2, projid32bit=1
+         =                       crc=1        finobt=1, sparse=1, rmapbt=0
+         =                       reflink=1
+data     =                       bsize=4096   blocks=1310720, imaxpct=25
+         =                       sunit=0      swidth=0 blks
+naming   =version 2              bsize=4096   ascii-ci=0, ftype=1
+log      =internal log           bsize=4096   blocks=2560, version=2
+         =                       sectsz=512   sunit=0 blks, lazy-count=1
+realtime =none                   extsz=4096   blocks=0, rtextents=0
+[root@arya ~]# 
+[root@arya ~]# blkid
+/dev/mapper/cl-root: UUID="d6a5d90e-fc5f-48a1-a83f-9bdf373869cd" BLOCK_SIZE="512" TYPE="xfs"
+/dev/sda2: UUID="fBYpLg-GMxz-8Q5o-zeOX-EPlV-lFFL-ouVUO1" TYPE="LVM2_member" PARTUUID="61fcbdda-02"
+/dev/sr0: BLOCK_SIZE="2048" UUID="2020-11-18-21-39-52-00" LABEL="CentOS-8-3-2011-x86_64-dvd" TYPE="iso9660" PTUUID="6b8b4567" PTTYPE="dos"
+/dev/sda1: UUID="8c209cfe-9ced-413b-9dbe-6b769c749836" BLOCK_SIZE="512" TYPE="xfs" PARTUUID="61fcbdda-01"
+/dev/sdb1: UUID="374cfeec-adda-4eb6-b170-2a1fd6af5091" TYPE="swap" PARTUUID="9af7b18a-01"
+/dev/mapper/cl-swap: UUID="eca229ba-45b4-4948-a035-9bd5b7c10240" TYPE="swap"
+/dev/sdb2: UUID="KqO23I-YZbz-lMgJ-b1wi-O0IW-xRYq-wPN2Uf" TYPE="LVM2_member" PARTUUID="9af7b18a-02"
+/dev/sdc: PTUUID="ef2ec26d" PTTYPE="dos"
+/dev/mapper/rhcsa-arya: UUID="3bed1591-f45b-4be0-9a0b-44fc32bbcc35" BLOCK_SIZE="512" TYPE="xfs"
+[root@arya ~]# 
+[root@arya ~]# mkdir /database
+[root@arya ~]# 
+[root@arya ~]# vim /etc/fstab 
+[root@arya ~]# mount -a
+[root@arya ~]# lsblk
+NAME MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda    8:0    0   20G  0 disk 
+├─sda1
+│      8:1    0    1G  0 part /boot
+└─sda2
+       8:2    0   19G  0 part 
+  ├─cl-root
+  │  253:0    0   17G  0 lvm  /
+  └─cl-swap
+     253:1    0    2G  0 lvm  [SWAP]
+sdb    8:16   0   20G  0 disk 
+├─sdb1
+│      8:17   0  500M  0 part [SWAP]
+└─sdb2
+       8:18   0   10G  0 part 
+  └─rhcsa-arya
+     253:2    0    5G  0 lvm  /database
+sdc    8:32   0   20G  0 disk 
+sr0   11:0    1  8.6G  0 rom  /run/media
+[root@arya ~]# 

@@ -1,0 +1,15 @@
+# vim testapp
+--> #!/bin/bash
+
+if [ -f ~/.testapp/testapp.conf ]
+then 
+	cat ~/.testapp/testapp.conf
+else
+	echo " There is no message fo you "
+fi
+
+:wq!
+
+# chmod a+x testapp
+
+# mv testapp /bin
