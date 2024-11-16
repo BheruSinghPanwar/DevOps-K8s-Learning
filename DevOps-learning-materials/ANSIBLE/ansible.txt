@@ -1,0 +1,68 @@
+a simplified overview of the common files and directories involved in setting up and using Ansible
+
+/ansible
+├── /ansible.cfg       # Ansible configuration file
+├── /inventory         # Directory for inventory files
+│   ├── production     # Inventory file for production environment
+│   └── staging        # Inventory file for staging environment
+├── /group_vars        # Directory for group-specific variable files
+│   ├── all.yml        # Variables applicable to all hosts
+│   ├── production.yml # Variables specific to the production environment
+│   └── staging.yml    # Variables specific to the staging environment
+├── /host_vars         # Directory for host-specific variable files
+│   ├── server1.yml    # Variables specific to host "server1"
+│   └── server2.yml    # Variables specific to host "server2"
+├── /roles             # Directory for Ansible rolesdfg‎
+│   ├── common         # Role for common tasks across all hosts
+│   │   ├── tasks      # Tasks directory for the "common" role
+│   │   └── defaults   # Default variable files for the "common" role
+│   └── webserver      # Role for configuring a web server
+│       ├── tasks      # Tasks directory for the "webserver" role
+│       └── defaults   # Default variable⁮ files for the "webserver" role
+├── ansible-playbook.yml  # Main playbook file
+└── /files             # Directory for files to be copied to remote hosts
+    ├── config_file.conf  # Example configuration file
+    └── index.html         # Example HTML file
+
+
+three machines:- 1 Ubuntu, 2 RHEL
+-----------------------------------------------------------------------------------------------
+Machine(UBUNTU):- cn.ansible
+
+1. apt update
+2. apt install software-properties-common
+3. apt-add-repository --yes --update ppa:ansible/ansible
+4. apt install ansible
+
+5. check installed (yum list | grep ansible)
+
+->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->
+
+//ansible configuration file ansible.cfg
+	//<ip-address || FQDN>
+	//if has a continous series for name or ip add the first and last in square brackets (either in number or character)
+	
+	//[<groupname>]
+	//<ip || FQDN>
+
+	to group multiple groups
+	[<groupname>:children]
+	//<ip || FQDN>
+
+->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->
+to check available modules in ansible :-- ansible-doc -l
+
+
+Variables in playbool
+1. Global scope :- when running a playbook add -e "<varname>=<value>" highest precedence
+
+2. Play scope :- in the playbook file 
+	vars:
+		- <varname>:<value>
+	vars_files:
+		- <file_path>
+
+3. Host scope:- make variables in different file and call where necessary
+
+
+

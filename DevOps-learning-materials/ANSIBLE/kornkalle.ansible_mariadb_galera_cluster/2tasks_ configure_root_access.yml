@@ -1,0 +1,68 @@
+- name: configure_root_access | updating root passwords
+  mysql_user:
+    host: "{{ item }}"
+    login_unix_socket: "{{ mariadb_login_unix_socket }}"
+    name: root
+    password: "{{ mariadb_mysql_root_password }}"
+  become: true
+  run_once: true
+  no_log: true
+  with_items:
+    - "{{ ansible_hostname }}"
+    - "127.0.0.1"
+    - "::1"
+    - localhost
+
+Summary:- the playbook task is designed to configure root access by updating the root password for the MySQL/MariaDB user on multiple hosts specified in the loop. It is configured to run with elevated privileges, execute only once, and avoid logging sensitive information.
+
+((mariadb_login_unix_socket: "/var/run/mysqld/mysqld.sock"
+mariadb_mysql_root_password: "mocked_password"))
+------------------------------------------------------------------------------------------------------------------------------------------
+
+- name: configure_root_access | configuring root my.cnf
+  template:
+    src: "root/my.cnf.j2"
+    dest: "/root/.my.cnf"
+    owner: "root"
+    group: "root"
+    mode: "u=rw,g=,o="
+  become: true
+  no_log: true
+  when: ansible_os_family == "RedHat"
+
+Summary:- This task is responsible for configuring the root MySQL/MariaDB client access by templating a configuration file (my.cnf) and placing it in the /root directory with specific ownership and permissions only in RedHat operating system.
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+- name: configure_root_access | updating root passwords
+  mysql_user:
+    host: "{{ item }}"
+    login_unix_socket: "{{ mariadb_login_unix_socket }}"
+    name: root
+    password: "{{ mariadb_mysql_root_password }}"
+  become: true
+  no_log: true
+  with_items:
+    - "{{ ansible_hostname }}"
+    - "127.0.0.1"
+    - "::1"
+    - localhost
+
+Summary:- Similar to the first task, this task updates the root password for the MySQL/MariaDB user on multiple hosts. However, it doesn't have the run_once: true attribute, so it may run for each item in the loop
+
+-------------------------------------------------------------------------------------------------------------------------------------
+
+- name: configure_root_access | updating root passwords (allow from anywhere)
+  mysql_user:
+    host: "{{ item }}"
+    login_unix_socket: "{{ mariadb_login_unix_socket }}"
+    name: root
+    password: "{{ mariadb_mysql_root_password }}"
+    priv: "*.*:ALL,GRANT"
+  become: true
+  no_log: true
+  with_items:
+    - "%"
+  when: galera_allow_root_from_any|bool
+
+Summary:- This task updates the root password for the MySQL/MariaDB user with additional privileges (all privileges on all databases) for the host specified as "%".It runs only if the variable galera_allow_root_from_any is evaluated as true.

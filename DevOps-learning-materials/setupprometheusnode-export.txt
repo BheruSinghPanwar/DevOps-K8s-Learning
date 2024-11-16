@@ -1,0 +1,95 @@
+#1
+Step 1: Update the Linux packages:
+Step 2: Install Dependency: wget
+
+#2
+Step 1: Download the Prometheus package from https://github.com/prometheus/prometheus/releases/download/v2.51.0/prometheus-2.51.0.linux-amd64.tar.gz
+
+
+#3: Create Prometheus User and modify the permission
+
+Step 1: Add a Prometheus user with no login.
+Step 2: Create Prometheus directories in “/etc” and
+“/var/lib” locations.
+
+Step 3: Change the ownership of the above directories to the Prometheus user we have created in the first step.
+
+Step 4: Now go to Prometheus downloaded location and extract it.
+
+Step 5: Change the Prometheus Extracted directory name to Prometheus
+
+
+Step 6: Copy the “prometheus” and “promtool” binary from the “prometheus” folder to “/usr/local/bin” location.
+
+
+Step 7: Change the ownership to Prometheus user for the copied binary files.
+
+Step 8: Copy the “consoles” and “console_libraries” directories from the “prometheus” to the “/etc/prometheus folder”
+
+Step 9: Change the ownership to Prometheus user
+
+
+#4: Configure Prometheus Systemd service
+Step 1: Create a systemd service file for Prometheus to run as System Startup.
+
+Step 2: Add the following content to the file:
+[Unit]
+Description=Prometheus
+Wants=network-online.target
+After=network-online.target
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus --config.file
+/etc/prometheus/prometheus.yml --storage.tsdb.path /var/lib/prometheus/
+--web.console.templates=/etc/prometheus/consoles
+--web.console.libraries=/etc/prometheus/console_libraries
+[Install]
+WantedBy=multi-user.target
+
+Step 3: Restart the daemon services to load the Prometheus service.
+
+Start 4: Start and enable the Prometheus service to automatically run after reboot
+
+Step 5: To check if the Prometheus service is running
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Step 1: Download and Install Node Exporter
+Step 2: Extract Node Exporter
+Step 3: Create node_exporter user with no login shell
+Step 4: Copy the Node Exporter binary to /usr/local/bin/
+Step 5: Change ownership
+	chown node_exporter:apache_exporter /usr/local/bin/node_exporter
+Step 6: Create a systemd unit configuration file for Node Exporter 
+	vim /etc/systemd/system/node_exporter.service
+
+[Unit]
+Description=Node Exporter
+Wants=network-online.target
+After=network-online.target
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter
+Restart=always
+RestartSec=3
+[Install]
+WantedBy=multi-user.target
+
+
+Step 7: Restart the daemon by systemctl daemon-reload
+Step 8: Enable Node Exporter to start on boot
+
+Step 9: Start Node Exporter
+
+Step 10: Check the status of Node Exporter:
+Step 11: Add Node Exporter as a Target in Prometheus
+Step 12: Add the following job configuration for Node Exporter
+	- job_name: 'node_export'
+	  static_configs:
+		- targets: ["localhost:9100"]

@@ -1,0 +1,27 @@
+- name: Create MySQL users
+  mysql_user:
+    append_privs: "{{ item.0.append_privs | default('no') }}"
+    encrypted: "{{ item.0.encrypted | default('no') }}"
+    host: "{{ item.1 }}"
+    login_unix_socket: "{{ mariadb_login_unix_socket }}"
+    name: "{{ item.0.name }}"
+    password: "{{ item.0.password }}"
+    priv: "{{ item.0.priv | default('*.*:USAGE') }}"
+    state: "{{ item.0.state | default('present') }}"
+  become: true
+  with_subelements:
+    - "{{ mariadb_mysql_users }}"
+    - hosts
+  no_log: true
+
+Summary:-This play basically sets the user privilages based on their existence.
+
+- `append_privs`: Determines whether to add or replace privileges for an existing user.
+- `with_subelements`: A loop construct to iterate over a list of dictionaries and their sub-elements.
+- `state`: Specifies whether the MySQL user should be present or absent.
+
+We also provided an example and explained how `append_privs` works in combination with the loop, allowing you to accumulate or replace privileges for a MySQL user on different hosts.
+
+Additionally, we covered the significance of the `state` parameter in the context of managing MySQL users with Ansible. The `state: present` ensures the user's presence with specified configurations, while `state: absent` removes the user if it exists.
+
+Overall, the Ansible play is designed to be flexible, allowing you to manage MySQL users on multiple hosts with varying privileges and states.

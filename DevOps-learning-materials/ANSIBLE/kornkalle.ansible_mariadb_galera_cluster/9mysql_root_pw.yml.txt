@@ -1,0 +1,40 @@
+---
+- name: mysql_root_pw | setting
+  debconf:
+    name: "mariadb-server-{{ mariadb_version }}"
+    question: "{{ item.question }}"
+    value: "{{ item.value }}"
+    vtype: "password"
+  become: true
+  changed_when: false
+  no_log: true
+  with_items:
+    - question: "mysql-server/root_password"
+      value: "{{ mariadb_mysql_root_password }}"
+    - question: "mysql-server/root_password_again"
+      value: "{{ mariadb_mysql_root_password }}"
+  when: ansible_os_family == "Debian"
+
+Summary:-This Ansible task sets the root password for MySQL/MariaDB server on Debian-based systems using the `debconf` module.
+
+- `name: mysql_root_pw | setting`: This is a descriptive name for the task. It helps identify the task in the playbook. In this case, it's "mysql_root_pw | setting".
+
+- `debconf`: This is an Ansible module used to manage Debian package configuration using `debconf` system. It is being used here to set the root password for the MariaDB server.
+
+  - `name`: Specifies the name of the package for which the configuration is being set. In this case, it's `"mariadb-server-{{ mariadb_version }}"`, which is a dynamically constructed string based on the MariaDB version (`mariadb_version` is likely a variable).
+
+  - `question`: Specifies the debconf question to be answered. In this case, it's `"{{ item.question }}"`, where `item` is a loop variable and `question` is a key in the loop item.
+
+  - `value`: Specifies the value to set for the debconf question. In this case, it's `"{{ item.value }}"`, where `item` is a loop variable and `value` is a key in the loop item. This likely contains the root password for MySQL/MariaDB, which is stored in the `mariadb_mysql_root_password` variable.
+
+  - `vtype`: Specifies the type of value being set. In this case, it's `"password"`.
+
+- `become: true`: This indicates that Ansible should escalate privileges and execute the task as a superuser. This is likely required to set the root password for MySQL/MariaDB.
+
+- `changed_when: false`: This tells Ansible not to report the task as changed even if the `debconf` module executes successfully. This is because setting the root password may not always result in a change.
+
+- `no_log: true`: This prevents the root password from being logged in the output. It's a security measure to avoid exposing sensitive information.
+
+- `with_items`: This specifies a loop over a list of items. In this case, it's looping over a list of dictionaries, each containing a `question` and `value` key-value pair. This allows setting both the root password and the confirmation password for MySQL/MariaDB.
+
+- `when: ansible_os_family == "Debian"`: This is a conditional statement. It specifies that the task should only be executed on Debian-based systems. This ensures that the task is only applied where it is relevant.

@@ -1,0 +1,212 @@
+---
+
+- name: setup_cluster | checking if galera cluster setup
+  stat:
+    path: "/etc/galera_cluster_configured"
+  register: "galera_cluster_configured"
+
+- name: Debian | configuring db server and galera
+  template:
+    src: "{{ item }}.j2"
+    dest: "/{{ item }}"
+  become: true
+  register: "_mariadb_galera_cluster_reconfigured_1"
+  loop:
+    - "etc/mysql/debian.cnf"
+    - "etc/mysql/my.cnf"
+    - "etc/mysql/conf.d/galera.cnf"
+  when: ansible_os_family == "Debian"
+
+- name: RedHat | configuring db server and galera
+  template:
+    src: "{{ item }}.j2"
+    dest: "/{{ item }}"
+  become: true
+  register: "_mariadb_galera_cluster_reconfigured_2"
+  loop:
+    - "etc/my.cnf.d/server.cnf"
+  when: ansible_os_family == "RedHat"
+
+- name: setup_cluster | stop galera on workers
+  service:
+    name: "{{ mariadb_systemd_service_name }}"
+    state: "stopped"
+  become: true
+  when: >
+    not galera_cluster_configured.stat.exists and
+    inventory_hostname != galera_mysql_master_node
+
+- name: Allow workers to stop gracefully
+  pause:
+    seconds: 10
+
+- name: setup_cluster | stop galera on mysql_master
+  service:
+    name: "{{ mariadb_systemd_service_name }}"
+    state: "stopped"
+  become: true
+  when: >
+    not galera_cluster_configured.stat.exists and
+    inventory_hostname == galera_mysql_master_node
+
+- name: Allow master to stop gracefully
+  pause:
+    seconds: 10
+
+- name: setup_cluster | killing lingering mysql processes
+  command: "pkill mysqld"
+  become: true
+  ignore_errors: true
+  when: not galera_cluster_configured.stat.exists
+
+- name: Debian | configuring galera on mysql_master
+  template:
+    src: "etc/mysql/conf.d/galera.cnf.j2"
+    dest: "/etc/mysql/conf.d/galera.cnf"
+  become: true
+  register: "_mariadb_galera_cluster_reconfigured_3"
+  when: >
+    (ansible_distribution == "Debian" or
+    (ansible_distribution == "Ubuntu" and
+    ansible_distribution_version <= '14.04')) and
+    not galera_cluster_configured.stat.exists and
+    inventory_hostname == galera_mysql_master_node
+
+- name: RedHat | configuring galera on mysql_master
+  template:
+    src: "etc/my.cnf.d/server.cnf.j2"
+    dest: "/etc/my.cnf.d/server.cnf"
+  become: true
+  register: "_mariadb_galera_cluster_reconfigured_4"
+  when: >
+    ansible_os_family == "RedHat" and
+    not galera_cluster_configured.stat.exists and
+    inventory_hostname == galera_mysql_master_node
+
+- name: setup_cluster | bootstrap galera cluster
+  command: "/usr/bin/galera_new_cluster"
+  become: true
+  when: >
+    not galera_cluster_configured.stat.exists and
+    inventory_hostname == galera_mysql_master_node
+
+- name: Allow masters to bootstrap gracefully
+  pause:
+    seconds: 5
+
+- name: setup_cluster | joining galera cluster
+  service:
+    name: "{{ mariadb_systemd_service_name }}"
+    state: "restarted"
+  become: true
+  when: >
+    not galera_cluster_configured.stat.exists and
+    inventory_hostname != galera_mysql_master_node
+
+- name: setup_cluster | restarting galera on mysql_master
+  service:
+    name: "{{ mariadb_systemd_service_name }}"
+    state: "restarted"
+  become: true
+  when: >
+    (ansible_distribution == "Debian" or
+    (ansible_distribution == "Ubuntu" and
+    ansible_distribution_version <= '14.04')) and
+    not galera_cluster_configured.stat.exists and
+    inventory_hostname == galera_mysql_master_node
+
+- name: setup_cluster | marking galera cluster as configured
+  file:
+    path: "/etc/galera_cluster_configured"
+    state: "touch"
+  become: true
+  when: not galera_cluster_configured.stat.exists
+
+# Only restart if cluster has already been configured
+- name: setup_cluster | Restarting MySQL (Master)
+  service:
+    name: "{{ mariadb_systemd_service_name }}"
+    state: "restarted"
+  become: true
+  register: "_mariadb_galera_cluster_master_restarted"
+  when: >
+    (galera_cluster_configured['stat']['exists'] and
+    inventory_hostname == galera_mysql_master_node) and
+    (_mariadb_galera_cluster_reconfigured_1['changed'] or
+    _mariadb_galera_cluster_reconfigured_2['changed'] or
+    _mariadb_galera_cluster_reconfigured_3['changed'] or
+    _mariadb_galera_cluster_reconfigured_4['changed'])
+
+- name: setup_cluster | Waiting For MySQL (Master)
+  wait_for:
+    port: "{{ mariadb_mysql_port }}"
+    host: "{{ galera_cluster_bind_address }}"
+  when: >
+    inventory_hostname == galera_mysql_master_node and
+    _mariadb_galera_cluster_master_restarted['changed']
+
+# Only restart if cluster has already been configured
+- name: setup_cluster | Restarting MySQL (Non-Master)
+  service:
+    name: "{{ mariadb_systemd_service_name }}"
+    state: "restarted"
+  become: true
+  register: "_mariadb_galera_cluster_non_master_restarted"
+  when: >
+    (galera_cluster_configured['stat']['exists'] and
+    inventory_hostname != galera_mysql_master_node) and
+    (_mariadb_galera_cluster_reconfigured_1['changed'] or
+    _mariadb_galera_cluster_reconfigured_2['changed'] or
+    _mariadb_galera_cluster_reconfigured_3['changed'] or
+    _mariadb_galera_cluster_reconfigured_4['changed'])
+
+- name: setup_cluster | Waiting For MySQL (Non-Master)
+  wait_for:
+    port: "{{ mariadb_mysql_port }}"
+    host: "{{ galera_cluster_bind_address }}"
+  when: >
+    inventory_hostname != galera_mysql_master_node and
+    _mariadb_galera_cluster_non_master_restarted['changed']
+
+
+This playbook is designed to set up a Galera MySQL cluster, which is a multi-master cluster solution for MySQL and MariaDB databases. It ensures that the cluster is configured and running on all nodes, with one node designated as the initial master node.
+
+1. **Check if the Galera cluster is already set up**: The first task checks if the `/etc/galera_cluster_configured` file exists, which indicates whether the Galera cluster has already been configured or not.
+
+2. **Configure database server and Galera on Debian systems**: If the host is a Debian-based system, this task configures the necessary configuration files for the database server and Galera using Jinja2 templates.
+
+3. **Configure database server and Galera on RedHat systems**: Similarly, if the host is a RedHat-based system, this task configures the necessary configuration files for the database server and Galera.
+
+4. **Stop Galera on worker nodes**: For worker nodes (non-master nodes), this task stops the MariaDB/MySQL service if the Galera cluster hasn't been configured yet.
+
+5. **Allow workers to stop gracefully**: A brief pause is added to allow the worker nodes to stop gracefully.
+
+6. **Stop Galera on the master node**: If the Galera cluster hasn't been configured yet, this task stops the MariaDB/MySQL service on the designated master node.
+
+7. **Allow the master to stop gracefully**: Another pause is added to allow the master node to stop gracefully.
+
+8. **Kill lingering MySQL processes**: This task forcefully kills any lingering MySQL processes if the Galera cluster hasn't been configured yet.
+
+9. **Configure Galera on the master node for Debian systems**: If the host is a Debian-based system and it's the designated master node, this task configures the Galera configuration file using a Jinja2 template.
+
+10. **Configure Galera on the master node for RedHat systems**: Similar to the previous task, but for RedHat-based systems.
+
+11. **Bootstrap the Galera cluster**: On the designated master node, this task initializes and bootstraps the Galera cluster if it hasn't been configured yet.
+
+12. **Allow the master to bootstrap gracefully**: A brief pause is added to allow the master node to bootstrap gracefully.
+
+13. **Join worker nodes to the Galera cluster**: For worker nodes, this task starts (or restarts) the MariaDB/MySQL service to join the newly bootstrapped Galera cluster.
+
+14. **Restart Galera on the master node for Debian systems**: If the host is a Debian-based system and it's the designated master node, this task restarts the MariaDB/MySQL service after the cluster has been bootstrapped.
+
+15. **Mark the Galera cluster as configured**: After the initial setup, this task creates a file (`/etc/galera_cluster_configured`) to indicate that the Galera cluster has been configured.
+
+16. **Restart MySQL on the master node (if cluster already configured)**: If the Galera cluster was already configured and the master node's configuration files were updated, this task restarts the MariaDB/MySQL service on the master node.
+
+17. **Wait for MySQL on the master node**: After restarting the service on the master node, this task waits for the MySQL port to become accessible.
+
+18. **Restart MySQL on worker nodes (if cluster already configured)**: Similar to the task for the master node, but for worker nodes.
+
+19. **Wait for MySQL on worker nodes**: After restarting the service on worker nodes, this task waits for the MySQL port to become accessible on each worker node.
+
+Overall, this playbook automates the process of setting up a Galera MySQL cluster by configuring the necessary files, bootstrapping the cluster on the designated master node, and joining the worker nodes to the cluster. It also handles restarting the services when configuration changes are made and ensures that the cluster is properly configured and running on all nodes.

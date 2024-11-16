@@ -1,0 +1,91 @@
+PRACTICAL 1
+
+machineOne:-
+1. make two containers(application, cont1 and cont2)
+2. shared index.html
+
+3. Loadbalancer container(for cont1 and cont2) {port 80}
+4. expose laodbalancer by hosts port 8080
+
+
+Commands:-
+
+1. mkdir /web1
+2. mkdir /web2
+3. add content to these files (different for testing)
+4. docker pull nginx
+5. docker run -d --name=web1-container -v web1/:/usr/share/nginx/html nginx
+6. docker run -d --name=web2-container -v web2/:/usr/share/nginx/html nginx
+7. docker pull haproxy
+8. mkdir /haproxy/
+9. vim /haproxy/haproxy.cfg (configuration file for haproxy with format)
+10. frontent <name> | deafult:web_techno | backend:web_techno | add IPs of both container
+11. docker run -d --name=lb -v /haproxy:/usr/loacl/etc/haproxy -p 8080:80 -u root haproxy
+
+**************************************************************************************************
+**************************************************************************************************
+
+PRACTICAL 2
+
+1. install docker
+2. pull the images of wordpress and mysql
+3. create and start the mysq container with port mapping and credentials
+	#docker run -d --name=mysql -e MYSQL_ROOT_PASSWORD=grras -e MYSQL_DATABASE=wordpress mysql
+
+4. create the container for wordpress with link of mysqldb IPv4
+	docker run -d --name=wordpress --link=mysql -p 8081:80 \
+ 	 -e WORDPRESS_DB_HOST=172.17.0.2:3306 \
+ 	 -e WORDPRESS_DB_USER=root \
+ 	 -e WORDPRESS_DB_PASSWORD=passwordOne \
+ 	 -e WORDPRESS_DB_NAME=wordpress \
+ 	 -e WORDPRESS_TABLE_PREFIX=wp_ \
+ 	 wordpress
+
+5. go to url and type http://host_IP:8081
+
+**************************************************************************************************
+**************************************************************************************************
+
+**Docker commit method**
+docker run -it --name=hello centos:7
+	yum -y install httpd
+	add some data or make directory
+	start apache
+docker commit hello yad:os		(commit dont save state of the images)
+docker images				(mostly for daemon images)
+
+(if removed hello no affects)
+
+
+**Docker file method**
+docker file method is just a simple text dile where we need to use predefiend keywords
+docker file name should be Dockerfile
+
+->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->
+
+select operating system (lets say centos)
+repoadd
+install package
+configurations
+data
+start service
+
+PARAMETERS
+FROM (base image for eg centos:7)
+RUN (define command)
+COPY (local data to images)
+ADD (same as COPY but can also download from internet in a dir)
+CMD
+->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->->
+mkdirweb
+echo "this is docker file" > web/index.html
+vim Dockerfile
+	FROM <image for eg centos:7>
+	MAINTAINER eaglearcher@localhost
+	LABEL info apache2.0
+	LABEL info this is testing (for knowledge)
+	ENV name <name>
+	ENV college <name>
+	RUN <yum -y install httpd && mkdir /project && touch /project/hello>
+	COPY ./web /var/www/html
+	ADD

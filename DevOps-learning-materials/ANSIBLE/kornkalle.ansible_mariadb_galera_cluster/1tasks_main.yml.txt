@@ -1,0 +1,87 @@
+# tasks file for ansible-mariadb-galera-cluster
+---------------------------------------------------------------------------------
+- name: gather os specific variables
+  include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+
+Summary:- this play gathers the information of os and save them in the respective files based on the names and data. These are used `include_vars: "{{ item }}"` here by jinja2 syntax.
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+- name: Ensure NIC specified in 'galera_cluster_bind_interface' exists
+  assert:
+    that:
+      - galera_cluster_bind_interface in ansible_interfaces
+    fail_msg: >-
+      The NIC name '{{ galera_cluster_bind_interface }}' specified in
+      'galera_cluster_bind_interface' does not exist on the target host.
+      Available interfaces are: {{ ansible_interfaces | join(',') }}.
+
+Summary:- This task ensures that the network interface specified in the variable "galera_cluster_bind_interface" exists on the target host. If it doesn't, the playbook will fail with a descriptive error message.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+- include: unconfigure_cluster.yml
+  when: >
+    galera_reconfigure_galera is defined and
+    galera_reconfigure_galera
+
+- include: debian.yml
+  when: ansible_os_family == "Debian"
+
+- include: redhat.yml
+  when: ansible_os_family == "RedHat"
+
+- include: max-open-files.yml
+  when: >
+    ansible_service_mgr == "systemd" and
+    mariadb_max_open_files != 0
+
+- include: oom-score-adjust.yml
+  when: >
+    ansible_service_mgr == "systemd" and
+    mariadb_oom_score_adjust != 0
+
+Summary:- These are conditional includes based on various factors such as `galera_reconfigure_galera` variable, operating system family (Debian or RedHat), and systemd as the service manager. These includes allow for specific configurations to be applied based on the conditions.
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+- name: Configure swappiness
+  sysctl:
+    name: vm.swappiness
+    value: "{{ mariadb_swappiness }}"
+    state: present
+  become: true
+  when:
+    - mariadb_swappiness != 'auto'
+    - "not (
+      (ansible_virtualization_role == 'guest')
+      and (ansible_virtualization_type == 'lxc')
+      )"
+
+
+Summary:- this play configures the swap memory of virtual machine (if there is) vm.swappinness  for the mariadb database when mariadb_swappiness is not set to auto and containerization is 'lxe' with user account guest which helps to effeciently have I/O of the data from memories to RAM and processes.  swap_tendency = mapped_ratio/2 + distress + vm_swappiness;
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+- include: setup_cluster.yml
+
+- include: mysql_databases.yml
+  when: mariadb_databases | count > 0
+
+- include: mysql_users.yml
+  tags: mysql-users
+  when: mariadb_mysql_users is defined
+
+
+- include: configure_root_access.yml
+
+
+Summary:- som custome files include for mysql database like for setup, databases information, users information, access control configurations
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Overall Purpose: The playbook is designed to configure a MariaDB Galera Cluster on target machines, taking into account various conditions such as the OS type, network interfaces, Galera reconfiguration, and specific configurations based on the OS and environment.

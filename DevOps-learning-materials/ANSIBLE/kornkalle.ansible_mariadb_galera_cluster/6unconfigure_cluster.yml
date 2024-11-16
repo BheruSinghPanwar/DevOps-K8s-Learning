@@ -1,0 +1,8 @@
+---
+- name: unconfigure_cluster | unconfiguring galera cluster
+  file:
+    path: "/etc/galera_cluster_configured"
+    state: "absent"
+  become: true
+
+Summary:- this removes the galera cluster root configuration file from the master

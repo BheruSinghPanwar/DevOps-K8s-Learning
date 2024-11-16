@@ -1,0 +1,125 @@
+Kubernetes also known as K8s, is an open-source system for automating deployment, scaling, and management of containerized applications.
+	- kubernetes runs its own unit all over a container known as pod (smallest unit)
+	- 1 pod can have multiple docker containers
+	- Name of agent (for ) - kublet.
+	- Master-Slave (worker) architecture
+Master node
+Worker node:- where containers are deployed
+
+Centralized Management
+Scaling: -
+	1. Manual (default)
+	2. Automatic (third party tools)
+Project Level Isolation
+Role based Access Control
+
+kube Api Port-6443
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Architecture of K8s
+
+Master/Conrol plan
+	- api-server (communication between valid apis)
+	- etcd (brain, database stores key-value pair)
+	- kube-scheduler (decides best fit node for pod creation)
+	- kube-controller (maintain the desired state of node as per etcd)
+
+Worker Node
+	- kubelet (uses container runtime interface to communicate with Container Engine)
+	- Container Engine
+	- kube-proxy
+
+
+*kubectl command can be executed from any machine
+
+NAMESPACE isolates the users to access the project on their limits
+
+<manifest>.yaml file like playbook of ansible
+
+***********************************************************************************************************************************************************
+Application Deployment Strategies:-
+Daemon_set(maintains the copy of pods on the )
+
+1. Pod (simple, no ha, no replica)
+2. rx (replication controller)
+3. rs (replica set)
+4. deployment (rc+rs+rolling updates +rollback)
+
+5. daemon set
+
+***********************************************************************************************************************************************************
+
+**Use private IPs of all machine to resolve names in /etc/hosts in all the machineas**
+free up swap memory (if exists) and comment the fstab file to permanently de-activatie the swap memory
+
+
+Master Node:-
+Commands: 
+	- kubectl create ns <name> --dry-run=client -o yaml
+	- kubectl create ns <name> --dry-run=server -o yaml
+	- kubectl create -f <name>.yml
+	- kubectl apply -f <name>.yaml (apply also works as create)
+	- kubectl delete pod <pod_name> -n <namespace>
+
+	- kubectl get -rs (replica set) -n <namespace>
+  Scaling:
+	- kubectl scale --replicas=10 rs/<replica name> -n <namespace>
+
+
+  Deployment:
+	* go to kubernetes.io and search deployment (https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+	* create a file and insert data from above
+	- kubectl get deploy
+	- kubectl create -f deploy.yaml
+	- kubectl get deploy -n <namespace>
+	- kubectl get rs -n <namespace>
+	- kubectl describe deploy -n <namespace>
+	- kubectl scale --replicas=20 deploy/<deployment-name> -n <namespace>
+	* update the version of image
+	- kubectl set image deployment/<deployment-name> <container name>:<complete tag name> -n <namespace>
+	- kubectl rollout undo --to-revision= deploy/<deployment-name> -n <namespace>
+
+
+   Daemon-set
+	-kubectl create -f ds.yml
+	-kubectl 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Static Pods
+Static Pods are managed directly by the kubelet daemon on a specific node, without the API server observing them. Whereas most Pods are managed by the control plane (for example, a Deployment), for static Pods, the kubelet directly supervises each static Pod (and restarts it if it fails).
+
+Static Pods are always bound to one Kubelet on a specific node. The main use for static Pods is to run a self-hosted control plane: in other words, using the kubelet to supervise the individual control plane components.
+
+The kubelet automatically tries to create a mirror Pod on the Kubernetes API server for each static Pod. This means that the Pods running on a node are visible on the API server, but cannot be controlled from there. See the guide Create static Pods for more information.
+
+Note: The spec of a static Pod cannot refer to other API objects (e.g., ServiceAccount, ConfigMap, Secret, etc).
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Pod Schedulling:-
+
+1. NodName based Schedulling (highest priority, hard type schedulling {only works on defined node})
+	* just define nodeName before containers
+
+2. nodeSelector based Schedulling (pods must have labels)
+	* just define nodeSelector before containers
+
+3. cordon(unschedulling) and uncordon: to stop and restart schedulling
+
+4. Drain (also cordons):- kubernetes do not maintain simple pods . only node
+	command:- kubectl drain <nodename> --ignore=daemonsets(ignores the daemonset processes)
+5. Taint and Toleration:- Advance in schedulling
+			- Three types:-
+					1. NoSchedule (not affected by cordon)
+					2. preferNoSchedule (try not to schedule but if no other options can use this one)
+					3. NoExecute (drains, and clears all and remove existing schedulling)
+
+			- Master by default gets a taint
+			- taint expression:- <key>/<value>:<effect>
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+htpass (light)
+openldap (heavy)
+active directory
